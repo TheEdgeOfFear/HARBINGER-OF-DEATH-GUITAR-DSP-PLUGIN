@@ -61,7 +61,7 @@ The repository provides ready-to-use binaries and complete source code in dedica
 
 ---
 All the raw files are supplied for your adjustments and builds - stay RAD Metal Heads... The Edge Of Fear 
-Youtube Channel - youtube.com/channel/UCmkG31m8FpVoL1tyMU-x54Q
+Youtube Channel - https://www.youtube.com/@theedgeoffearmetal
 Instagram - https://www.instagram.com/theedgeoffear/
 Soundcloud - https://soundcloud.com/user-290758847
 
