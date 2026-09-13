@@ -12,7 +12,7 @@ class DetuneVoice
 public:
     DetuneVoice() = default;
 
-    void prepare(double sampleRate)
+    void prepare(double sampleRate, float phaseOffset = 0.0f)
     {
         currentSampleRate = sampleRate;
         bufferSize = 4096;
@@ -24,8 +24,8 @@ public:
         const float offsets[4] = { 0.0f, 0.25f, 0.5f, 0.75f };
         for (int i = 0; i < 4; ++i)
         {
-            voices[i].phase = offsets[i];
-            voices[i].lfoPhase = static_cast<float>(i) * 0.25f;
+            voices[i].phase = std::fmod(offsets[i] + phaseOffset + 1.0f, 1.0f);
+            voices[i].lfoPhase = std::fmod(static_cast<float>(i) * 0.25f + phaseOffset + 1.0f, 1.0f);
         }
     }
 

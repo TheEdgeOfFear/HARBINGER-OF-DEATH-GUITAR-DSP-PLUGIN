@@ -14,15 +14,16 @@ class HarbingerDSPChain
 public:
     HarbingerDSPChain() = default;
 
-    void prepare(double sampleRate, int samplesPerBlock, int numChannels)
+    void prepare(double sampleRate, int samplesPerBlock, int numChannels = 2)
     {
+        juce::ignoreUnused(numChannels);
         currentSampleRate = sampleRate;
-        channels = numChannels;
+        channels = 2;
 
         juce::dsp::ProcessSpec spec;
         spec.sampleRate = sampleRate;
         spec.maximumBlockSize = static_cast<juce::uint32>(samplesPerBlock);
-        spec.numChannels = static_cast<juce::uint32>(numChannels);
+        spec.numChannels = 2;
 
         // Input conditioning filters
         inputDcBlocker.prepare(spec);
@@ -43,18 +44,19 @@ public:
         presenceFilter.reset();
         *presenceFilter.state = *juce::dsp::IIR::Coefficients<float>::makePeakFilter(sampleRate, 3800.0f, 0.8f, juce::Decibels::decibelsToGain(+3.5f));
 
-        octaveEngines.resize(static_cast<size_t>(numChannels));
-        detuneVoices.resize(static_cast<size_t>(numChannels));
-        for (int ch = 0; ch < numChannels; ++ch)
+        octaveEngines.resize(2);
+        detuneVoices.resize(2);
+        for (int ch = 0; ch < 2; ++ch)
         {
             octaveEngines[static_cast<size_t>(ch)].prepare(sampleRate, samplesPerBlock);
-            detuneVoices[static_cast<size_t>(ch)].prepare(sampleRate);
+            detuneVoices[static_cast<size_t>(ch)].prepare(sampleRate, ch == 1 ? 0.33f : 0.0f);
         }
 
-        waveshaper.prepare(sampleRate, samplesPerBlock, numChannels, 4);
+        waveshaper.prepare(sampleRate, samplesPerBlock, 2, 4);
         chopModulator.prepare(sampleRate);
 
-        dryScratchBuffer.setSize(numChannels, samplesPerBlock);
+        dryScratchBuffer.setSize(2, samplesPerBlock);
+        monoToStereoScratchBuffer.setSize(2, samplesPerBlock);
     }
 
     void reset()
@@ -102,10 +104,22 @@ public:
                  bool isHostPlaying = false)
     {
         const int numSamples = buffer.getNumSamples();
-        const int numChans = std::min(buffer.getNumChannels(), channels);
+        const int bufChannels = buffer.getNumChannels();
 
-        if (numSamples == 0 || numChans == 0)
+        if (numSamples == 0 || bufChannels == 0)
             return;
+
+        const bool isMonoInput = (bufChannels == 1);
+        juce::AudioBuffer<float>& workBuffer = isMonoInput ? monoToStereoScratchBuffer : buffer;
+
+        if (isMonoInput)
+        {
+            if (monoToStereoScratchBuffer.getNumSamples() < numSamples)
+                monoToStereoScratchBuffer.setSize(2, numSamples, false, false, true);
+
+            monoToStereoScratchBuffer.copyFrom(0, 0, buffer.getReadPointer(0), numSamples);
+            monoToStereoScratchBuffer.copyFrom(1, 0, buffer.getReadPointer(0), numSamples);
+        }
 
         // Effect is active when Trash is engaged OR Chop is momentarily pressed/held
         const bool effectEngaged = trashActive || chopActive;
@@ -114,37 +128,52 @@ public:
         if (!effectEngaged)
         {
             if (std::abs(inputGain - 1.0f) > 0.001f)
-                buffer.applyGain(inputGain);
+                workBuffer.applyGain(inputGain);
 
             if (std::abs(outputGain - 1.0f) > 0.001f)
-                buffer.applyGain(outputGain);
+                workBuffer.applyGain(outputGain);
 
+            if (isMonoInput)
+            {
+                buffer.copyFrom(0, 0, monoToStereoScratchBuffer.getReadPointer(0), numSamples);
+            }
+            else if (bufChannels > 2)
+            {
+                for (int ch = 2; ch < bufChannels; ++ch)
+                    buffer.clear(ch, 0, numSamples);
+            }
             return;
         }
 
         // 2. Effect is ENGAGED: Process The Banshee Octave Fuzz & Chop
-        dryScratchBuffer.setSize(numChans, numSamples, false, false, true);
-        for (int ch = 0; ch < numChans; ++ch)
-            dryScratchBuffer.copyFrom(ch, 0, buffer, ch, 0, numSamples);
+        if (dryScratchBuffer.getNumSamples() < numSamples)
+            dryScratchBuffer.setSize(2, numSamples, false, false, true);
+
+        dryScratchBuffer.copyFrom(0, 0, workBuffer.getReadPointer(0), numSamples);
+        dryScratchBuffer.copyFrom(1, 0, workBuffer.getReadPointer(1), numSamples);
 
         // Input Conditioning (Input Gain)
-        buffer.applyGain(inputGain);
+        workBuffer.applyGain(inputGain);
 
         if (trashActive)
         {
-            juce::dsp::AudioBlock<float> block(buffer);
+            float* channelDataPointers[2] = {
+                workBuffer.getWritePointer(0),
+                workBuffer.getWritePointer(1)
+            };
+            juce::dsp::AudioBlock<float> block(channelDataPointers, 2, static_cast<size_t>(numSamples));
             juce::dsp::ProcessContextReplacing<float> context(block);
             inputDcBlocker.process(context);
             inputTightFilter.process(context);
 
             // Polyphonic Octave Engine & Detune / Dissonance Engine
-            for (int ch = 0; ch < numChans; ++ch)
+            for (int ch = 0; ch < 2; ++ch)
             {
                 auto& oct = octaveEngines[static_cast<size_t>(ch)];
                 auto& det = detuneVoices[static_cast<size_t>(ch)];
                 oct.setMode(octaveMode);
 
-                float* chData = buffer.getWritePointer(ch);
+                float* chData = workBuffer.getWritePointer(ch);
 
                 for (int i = 0; i < numSamples; ++i)
                 {
@@ -162,31 +191,44 @@ public:
             }
 
             // The Banshee Corrupted Square-Wave Fuzz (4x Oversampled)
-            waveshaper.process(buffer, squareWave);
+            // Create a temporary 2-channel audio buffer wrapper for the waveshaper
+            juce::AudioBuffer<float> twoChannelWrapper(workBuffer.getArrayOfWritePointers(), 2, numSamples);
+            waveshaper.process(twoChannelWrapper, squareWave);
 
             // Signature Scooped V-Shaped EQ (750 Hz mid scoop + 3.8 kHz presence bite)
-            juce::dsp::AudioBlock<float> eqBlock(buffer);
+            juce::dsp::AudioBlock<float> eqBlock(channelDataPointers, 2, static_cast<size_t>(numSamples));
             juce::dsp::ProcessContextReplacing<float> eqContext(eqBlock);
             scoopFilter.process(eqContext);
             presenceFilter.process(eqContext);
         }
 
         // Signal-Chopping Tremolo (Chop Engine)
-        chopModulator.process(buffer, chopActive, speedBpmSync, speedHz, syncDiv, hostBpm, hostPpq, isHostPlaying);
+        juce::AudioBuffer<float> chopWrapper(workBuffer.getArrayOfWritePointers(), 2, numSamples);
+        chopModulator.process(chopWrapper, chopActive, speedBpmSync, speedHz, syncDiv, hostBpm, hostPpq, isHostPlaying);
 
         // Master Dry/Wet Blending & Output Level
         const float wetGain = mix * outputGain;
         const float dryGain = (1.0f - mix) * outputGain;
 
-        for (int ch = 0; ch < numChans; ++ch)
+        for (int ch = 0; ch < 2; ++ch)
         {
-            float* dest = buffer.getWritePointer(ch);
+            float* dest = workBuffer.getWritePointer(ch);
             const float* dry = dryScratchBuffer.getReadPointer(ch);
 
             for (int i = 0; i < numSamples; ++i)
             {
                 dest[i] = (dry[i] * dryGain) + (dest[i] * wetGain);
             }
+        }
+
+        if (isMonoInput)
+        {
+            buffer.copyFrom(0, 0, monoToStereoScratchBuffer.getReadPointer(0), numSamples);
+        }
+        else if (bufChannels > 2)
+        {
+            for (int ch = 2; ch < bufChannels; ++ch)
+                buffer.clear(ch, 0, numSamples);
         }
     }
 
@@ -205,6 +247,7 @@ private:
     ChopModulator chopModulator;
 
     juce::AudioBuffer<float> dryScratchBuffer;
+    juce::AudioBuffer<float> monoToStereoScratchBuffer;
 };
 
 } // namespace HarbingerDSP

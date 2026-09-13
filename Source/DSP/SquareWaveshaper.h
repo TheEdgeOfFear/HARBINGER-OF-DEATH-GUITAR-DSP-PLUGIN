@@ -12,16 +12,17 @@ class SquareWaveshaper
 public:
     SquareWaveshaper() = default;
 
-    void prepare(double sampleRate, int samplesPerBlock, int numChannels, int oversampleFactor = 4)
+    void prepare(double sampleRate, int samplesPerBlock, int numChannels = 2, int oversampleFactor = 4)
     {
+        juce::ignoreUnused(samplesPerBlock, numChannels);
         currentSampleRate = sampleRate;
-        channels = numChannels;
+        channels = 2;
         currentOversampleFactor = oversampleFactor;
 
         setupOversampling(oversampleFactor);
 
-        lastSampleHold.assign(static_cast<size_t>(numChannels), 0.0f);
-        decimatorCounter.assign(static_cast<size_t>(numChannels), 0);
+        lastSampleHold.assign(2, 0.0f);
+        decimatorCounter.assign(2, 0);
     }
 
     void reset()

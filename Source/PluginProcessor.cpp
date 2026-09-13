@@ -3,7 +3,7 @@
 
 HarbingerAudioProcessor::HarbingerAudioProcessor()
     : AudioProcessor(BusesProperties()
-                     .withInput("Input", juce::AudioChannelSet::stereo(), true)
+                     .withInput("Input", juce::AudioChannelSet::mono(), true)
                      .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
       parameters(*this, nullptr, "Parameters", createParameterLayout())
 {
@@ -53,8 +53,8 @@ void HarbingerAudioProcessor::changeProgramName(int index, const juce::String& n
 
 void HarbingerAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
-    const int numIn = getTotalNumInputChannels();
-    dspChain.prepare(sampleRate, samplesPerBlock, std::max(1, numIn));
+    const int numChannels = std::max(2, std::max(getTotalNumInputChannels(), getTotalNumOutputChannels()));
+    dspChain.prepare(sampleRate, samplesPerBlock, numChannels);
 }
 
 void HarbingerAudioProcessor::releaseResources()
@@ -64,11 +64,14 @@ void HarbingerAudioProcessor::releaseResources()
 
 bool HarbingerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+    const auto& mainOutput = layouts.getMainOutputChannelSet();
+    const auto& mainInput  = layouts.getMainInputChannelSet();
+
+    if (mainOutput != juce::AudioChannelSet::mono() && mainOutput != juce::AudioChannelSet::stereo())
         return false;
 
-    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
+    if (mainInput != juce::AudioChannelSet::mono() && mainInput != juce::AudioChannelSet::stereo()
+        && mainInput != juce::AudioChannelSet::disabled())
         return false;
 
     return true;
@@ -77,6 +80,40 @@ bool HarbingerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts)
 void HarbingerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
+    const int totalNumInputChannels  = getTotalNumInputChannels();
+    const int totalNumOutputChannels = getTotalNumOutputChannels();
+    const int numSamples = buffer.getNumSamples();
+    const int bufChannels = buffer.getNumChannels();
+
+    if (numSamples == 0 || bufChannels == 0)
+        return;
+
+    for (int i = totalNumInputChannels; i < bufChannels; ++i)
+        buffer.clear(i, 0, numSamples);
+
+    // Mono-to-Stereo Duplication & L-only / R-only Intelligent Routing
+    // Ensures output is always full stereo regardless of whether input is Mono (1 channel) or single-plugged Stereo
+    if (bufChannels >= 2)
+    {
+        if (totalNumInputChannels == 1)
+        {
+            buffer.copyFrom(1, 0, buffer.getReadPointer(0), numSamples);
+        }
+        else if (totalNumInputChannels >= 2)
+        {
+            const float mag0 = buffer.getMagnitude(0, 0, numSamples);
+            const float mag1 = buffer.getMagnitude(1, 0, numSamples);
+
+            if (mag0 > 1e-5f && mag1 < (mag0 * 0.15f + 1e-4f))
+            {
+                buffer.copyFrom(1, 0, buffer.getReadPointer(0), numSamples);
+            }
+            else if (mag1 > 1e-5f && mag0 < (mag1 * 0.15f + 1e-4f))
+            {
+                buffer.copyFrom(0, 0, buffer.getReadPointer(1), numSamples);
+            }
+        }
+    }
 
     // 1. Process MIDI Events (CC, Learn, Footswitches, Program Change)
     midiManager.processMidi(
