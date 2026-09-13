@@ -11,7 +11,7 @@
 
 ## 📸 Plugin Overview
 
-![Harbinger of Death Interface](Assets/Background.jpg)
+![Harbinger of Death Interface](Assets/HARBINGER%20OF%20DEATH.png)
 
 **HARBINGER OF DEATH** is an extreme multi-stage distortion and rhythmic modulation pedal inspired by modern boutique glitch fuzzes (such as the Banshee / glitch-octave devices) but engineered with razor-sharp digital tracking, asymmetric square-wave clipping, pitch-shifted octave tails, and a hard-chopped gating engine.
 
