@@ -8,6 +8,11 @@ obj/
 .vs/
 .vscode/
 
+# Raw / uncompiled source and asset folders
+Source/
+Assets/
+CMakeLists.txt
+
 # Temporary / intermediate folders
 NEW Version/
 NEW Version ONLY/

@@ -9,14 +9,6 @@
 
 ---
 
-## 📸 Plugin Overview
-
-![Harbinger of Death Interface](Assets/HARBINGER%20OF%20DEATH.png)
-
-**HARBINGER OF DEATH** is an extreme multi-stage distortion and rhythmic modulation pedal inspired by modern boutique glitch fuzzes (such as the Banshee / glitch-octave devices) but engineered with razor-sharp digital tracking, asymmetric square-wave clipping, pitch-shifted octave tails, and a hard-chopped gating engine.
-
----
-
 ## 📚 Documentation & User Guides
 
 - 📖 **[Pedal Description & DSP Architecture](DESCRIPTION.md)** — Detailed DSP architecture, signal flow, and sonic design.
@@ -27,15 +19,13 @@
 
 ## 📦 Formats & Directory Structure
 
-The repository provides ready-to-use binaries and complete source code in dedicated folders:
+The repository provides ready-to-use binaries in dedicated folders:
 
 | Directory | Format | Description |
 | :--- | :--- | :--- |
 | [/VST3](VST3/) | **VST3 Plugin** | Standard 64-bit .vst3 bundle for DAWs + 1-click Windows installer batch file. |
 | [/Standalone](Standalone/) | **Standalone App** | Native 64-bit Windows executable (HARBINGER OF DEATH.exe) for live play without a DAW. |
 | [/DLL](DLL/) | **Standalone DLL** | Direct PE 64-bit dynamic library (HARBINGER OF DEATH.dll). |
-| [/Source](Source/) | **C++ / JUCE Source** | Complete source code and DSP algorithms built on the JUCE framework. |
-| [/Assets](Assets/) | **Graphics & UI** | Full-resolution background and interface artwork. |
 
 ---
 
@@ -60,10 +50,11 @@ The repository provides ready-to-use binaries and complete source code in dedica
   - Built-in factory presets ranging from doom octave walls, laser-precision rhythmic metalcore gates, to synthwave fuzz leads.
 
 ---
-All the raw files are supplied for your adjustments and builds - stay RAD Metal Heads... The Edge Of Fear 
-Youtube Channel - https://www.youtube.com/@theedgeoffearmetal
-Instagram - https://www.instagram.com/theedgeoffear/
-Soundcloud - https://soundcloud.com/user-290758847
+
+Stay RAD Metal Heads... The Edge Of Fear  
+- **YouTube Channel**: https://www.youtube.com/@theedgeoffearmetal  
+- **Instagram**: https://www.instagram.com/theedgeoffear/  
+- **SoundCloud**: https://soundcloud.com/user-290758847  
 
 ## 📄 License
 
