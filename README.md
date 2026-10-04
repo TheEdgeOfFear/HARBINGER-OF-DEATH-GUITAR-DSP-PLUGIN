@@ -1,4 +1,4 @@
-# HARBINGER OF DEATH ⚡💀
+﻿# HARBINGER OF DEATH ⚡💀
 ### *By THE EDGE OF FEAR*
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
@@ -38,9 +38,8 @@ The repository provides ready-to-use binaries in dedicated folders:
   - Throws thick stereo spread and chorus-like microtonal detune to widen solos and massive drop-tuned rhythm walls.
 - **Asymmetric Square Waveshaping**:
   - Brutal digital clipping with adjustable asymmetry, bias, and pre/post gain saturation.
-- **Hard-Chopped Rhythmic Stutter (CHOP) with Dynamic Ramp**:
+- **Hard-Chopped Rhythmic Stutter (CHOP)**:
   - High-speed rhythmic amplitude gating with host BPM synchronization (triplets, dotted notes, straight divisions) or manual frequency control (0.1 Hz – 50 Hz).
-  - **Dynamic Ramp Modulation (`UP | OFF | DOWN`)**: Triggering CHOP (or linked CHOP+TRASH) can dynamically accelerate (`UP`) or decelerate (`DOWN`) the chop rate across 1, 2, 3, or 4 bars smoothly towards a selected target sync division.
 - **Dual Footswitches with LINK Toggle**:
   - **CHOP Footswitch**: Momentary or latching trigger for the rhythmic stutter chopper.
   - **TRASH Footswitch**: Ignites maximum octave saturation, feedback gain boost, and high-frequency sizzle.

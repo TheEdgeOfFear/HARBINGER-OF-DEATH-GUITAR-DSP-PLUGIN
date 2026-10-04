@@ -1,4 +1,4 @@
-# User Manual & How To Use — HARBINGER OF DEATH
+﻿# User Manual & How To Use — HARBINGER OF DEATH
 ### *By THE EDGE OF FEAR*
 
 ---
@@ -40,14 +40,6 @@
 - **BPM SYNC Switch**:
   - OFF: Manual speed knob control.
   - ON: Synchronizes the chopper directly to host DAW tempo.
-- **RAMP MODE Switch (`UP | OFF | DOWN`)**:
-  - **OFF**: Steady, unmodulated chop rate according to primary speed/sync settings.
-  - **DOWN**: Decelerates the chop speed the moment CHOP (or linked CHOP+TRASH) is engaged, slowing down smoothly across the selected number of bars towards the target division.
-  - **UP**: Accelerates the chop speed when CHOP is engaged, speeding up smoothly across the selected number of bars towards the target division.
-- **RAMP BARS Selector (`1 Bar | 2 Bars | 3 Bars | 4 Bars`)**:
-  - Specifies the transition duration in musical measures/bars for the acceleration or deceleration curve.
-- **TARGET SYNC DIVISION Selector (`1/4` down to `1/32 T`)**:
-  - Defines the destination tempo-synced division reached at the end of the ramp duration.
 - **STUTTER DEPTH**: Controls gating attenuation (from gentle tremolo to 100% hard silence gating).
 
 ---
